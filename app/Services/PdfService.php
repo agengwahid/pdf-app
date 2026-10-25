@@ -12,6 +12,7 @@ class PdfService
     protected string $gsPath = '/usr/bin/gs';
     protected string $pdftoppmPath = '/usr/bin/pdftoppm';
     protected string $pdfinfoPath = '/usr/bin/pdfinfo';
+    protected string $libreofficePath = '/usr/bin/libreoffice';
 
     public function __construct()
     {
@@ -24,6 +25,9 @@ class PdfService
         }
         if (!file_exists($this->pdfinfoPath)) {
             $this->pdfinfoPath = trim(shell_exec('which pdfinfo 2>/dev/null') ?: 'pdfinfo');
+        }
+        if (!file_exists($this->libreofficePath)) {
+            $this->libreofficePath = trim(shell_exec('which libreoffice 2>/dev/null') ?: shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
         }
     }
 
@@ -413,4 +417,62 @@ class PdfService
             'file_size' => filesize($outputPath),
         ];
     }
+
+    /**
+     * Convert Word document (.docx, .doc, .odt, .rtf) to PDF using local LibreOffice headless.
+     *
+     * @return array{original_size: int, result_size: int, page_count: int, duration_ms: float}
+     */
+    public function convertWordToPdf(string $sourcePath, string $outputPath): array
+    {
+        if (!file_exists($sourcePath)) {
+            throw new Exception('Source Word document does not exist.');
+        }
+
+        $origSize = filesize($sourcePath);
+        $startTime = microtime(true);
+
+        $tempDir = storage_path('app/temp_word_' . uniqid());
+        $userProfileDir = $tempDir . '/profile';
+        File::makeDirectory($userProfileDir, 0755, true, true);
+
+        // Copy source file with original extension
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'docx';
+        $tempInput = $tempDir . '/document.' . $extension;
+        copy($sourcePath, $tempInput);
+
+        // Run LibreOffice headless conversion with isolated user profile
+        $cmd = sprintf(
+            '%s --headless --convert-to pdf --outdir %s -env:UserInstallation=%s %s 2>&1',
+            escapeshellcmd($this->libreofficePath),
+            escapeshellarg($tempDir),
+            escapeshellarg('file://' . $userProfileDir),
+            escapeshellarg($tempInput)
+        );
+
+        exec($cmd, $output, $code);
+
+        $expectedPdf = $tempDir . '/document.pdf';
+
+        if (!file_exists($expectedPdf) || filesize($expectedPdf) === 0) {
+            File::deleteDirectory($tempDir);
+            Log::error('Word to PDF conversion failed: ' . implode("\n", $output));
+            throw new Exception('Gagal mengonversi file Word ke PDF.');
+        }
+
+        copy($expectedPdf, $outputPath);
+        File::deleteDirectory($tempDir);
+
+        $resultSize = filesize($outputPath);
+        $pageCount = $this->getPageCount($outputPath);
+        $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+        return [
+            'original_size' => $origSize,
+            'result_size' => $resultSize,
+            'page_count' => $pageCount,
+            'duration_ms' => $duration,
+        ];
+    }
 }
+

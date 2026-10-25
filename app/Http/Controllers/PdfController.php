@@ -426,4 +426,65 @@ class PdfController extends Controller
 
         return $pages;
     }
+
+    /**
+     * Convert Word document (.docx, .doc, .odt, .rtf) to PDF.
+     */
+    public function wordToPdf(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|max:102400',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $originalName = $file->getClientOriginalName();
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (!in_array($ext, ['docx', 'doc', 'odt', 'rtf'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Format file tidak didukung. Harap unggah file dokumen Word (.docx, .doc, .odt, .rtf).',
+                ], 422);
+            }
+
+            $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+            $cleanName = Str::slug($baseName) ?: 'dokumen';
+            $resultFilename = $cleanName . '.pdf';
+            $outputPath = $this->storageDir . '/' . Str::random(16) . '_' . $resultFilename;
+
+            $stats = $this->pdfService->convertWordToPdf($file->getRealPath(), $outputPath);
+
+            $history = PdfHistory::create([
+                'session_id' => $request->session()->getId() ?: 'default_session',
+                'action' => 'word_to_pdf',
+                'original_name' => $originalName,
+                'result_name' => $resultFilename,
+                'file_path' => $outputPath,
+                'original_size' => $stats['original_size'],
+                'result_size' => $stats['result_size'],
+                'page_count' => $stats['page_count'],
+                'meta' => [
+                    'duration_ms' => $stats['duration_ms'],
+                    'format' => $ext,
+                ],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Dokumen Word berhasil dikonversi ke PDF ({$stats['page_count']} halaman).",
+                'result_name' => $resultFilename,
+                'result_size' => $stats['result_size'],
+                'page_count' => $stats['page_count'],
+                'duration_ms' => $stats['duration_ms'],
+                'download_url' => $history->download_url,
+                'history' => $history,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Konversi gagal: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
 }
+

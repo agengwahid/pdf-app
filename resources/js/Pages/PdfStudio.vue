@@ -67,13 +67,13 @@
       </div>
 
       <!-- Navigation Tabs (Anti-AI-Slop Clean Segmented Bar) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 bg-[#101217] p-1.5 rounded-xl border border-[#1e232e]">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 bg-[#101217] p-1.5 rounded-xl border border-[#1e232e]">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="activeTab = tab.id"
           :class="[
-            'flex items-center justify-center gap-2.5 py-3 px-4 rounded-lg text-xs font-semibold tracking-wide transition select-none',
+            'flex items-center justify-center gap-2.5 py-3 px-3 rounded-lg text-xs font-semibold tracking-wide transition select-none',
             activeTab === tab.id
               ? 'bg-[#1b202a] text-amber-400 border border-[#2e3747] shadow-lg shadow-black/40'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#14171e]'
@@ -105,6 +105,11 @@
 
         <ManageTab
           v-else-if="activeTab === 'manage'"
+          @operation-completed="handleOperationCompleted"
+        />
+
+        <WordToPdfTab
+          v-else-if="activeTab === 'word_to_pdf'"
           @operation-completed="handleOperationCompleted"
         />
       </section>
@@ -158,6 +163,7 @@ import {
   History,
   ShieldCheck,
   CheckCircle2,
+  FileType,
   X
 } from 'lucide-vue-next';
 
@@ -165,6 +171,7 @@ import MergeTab from '@/Components/MergeTab.vue';
 import CompressTab from '@/Components/CompressTab.vue';
 import SplitTab from '@/Components/SplitTab.vue';
 import ManageTab from '@/Components/ManageTab.vue';
+import WordToPdfTab from '@/Components/WordToPdfTab.vue';
 import HistoryDrawer from '@/Components/HistoryDrawer.vue';
 
 const props = defineProps({
@@ -188,6 +195,7 @@ const tabs = [
   { id: 'compress', title: 'Compress PDF', icon: Minimize2, desc: 'Kecilkan ukuran file' },
   { id: 'split', title: 'Split PDF', icon: Split, desc: 'Pisah / ekstrak halaman' },
   { id: 'manage', title: 'Manage PDF', icon: Layers, desc: 'Reorder, rotate & delete' },
+  { id: 'word_to_pdf', title: 'Word to PDF', icon: FileType, desc: 'Konversi .docx ke PDF' },
 ];
 
 function handleOperationCompleted(historyItem) {
