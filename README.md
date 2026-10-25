@@ -44,8 +44,14 @@ Dibangun menggunakan:
 - **Delete Halaman:** Hapus halaman yang tidak diinginkan dengan fitur *Undo / Restore* instan.
 - Simpan dan unduh dokumen hasil penataan.
 
-### 5. Riwayat Operasi Lokal (PostgreSQL)
-- Setiap operasi (`merge`, `compress`, `split`, `manage`) dicatat pada tabel `pdf_histories` di database PostgreSQL lokal.
+### 5. Word to PDF (Konversi Dokumen)
+- Konversi file dokumen Microsoft Word (`.docx`, `.doc`, `.odt`, `.rtf`) menjadi PDF beresolusi tinggi.
+- Menggunakan **LibreOffice 24 Headless Engine** lokal tanpa membutuhkan akses internet.
+- Mempertahankan font, tata letak tabel, header, footer, dan format dokumen asli.
+- Tampilan durasi konversi (ms), jumlah halaman, dan ukuran file hasil.
+
+### 6. Riwayat Operasi Lokal (PostgreSQL)
+- Setiap operasi (`merge`, `compress`, `split`, `manage`, `word_to_pdf`) dicatat pada tabel `pdf_histories` di database PostgreSQL lokal.
 - Drawer riwayat untuk mengunduh ulang hasil olahan sebelumnya atau menghapus riwayat.
 
 ---

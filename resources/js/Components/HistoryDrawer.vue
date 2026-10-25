@@ -146,6 +146,8 @@ function getActionBadgeClass(action) {
       return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
     case 'manage':
       return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+    case 'word_to_pdf':
+      return 'bg-sky-500/10 text-sky-400 border-sky-500/30';
     default:
       return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30';
   }
